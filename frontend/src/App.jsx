@@ -23,7 +23,7 @@ function initials(title = 'Event') {
 
 function normalizeRole(role = '') {
   const value = role.toLowerCase()
-  if (['student', 'students'].includes(value)) return 'student'
+  if (['student', 'students', 'attendee', 'attendees'].includes(value)) return 'student'
   if (['admin', 'admins', 'administrator', 'administrators'].includes(value)) return 'admin'
   if (['organizer', 'organizers', 'organiser', 'organisers'].includes(value)) return 'organizer'
   return value

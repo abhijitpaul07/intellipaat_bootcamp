@@ -57,7 +57,8 @@ def list_users():
     """List public user IDs, optionally filtered by role; no auth checks."""
     role = (request.args.get("role") or "all").strip().lower()
     role_values = {
-        "student": ["student", "students"],
+        # Existing event attendees are student profiles in this app's UI.
+        "student": ["student", "students", "attendee", "attendees"],
         "admin": ["admin", "admins", "administrator", "administrators"],
         "organizer": ["organizer", "organizers", "organiser", "organisers"],
     }

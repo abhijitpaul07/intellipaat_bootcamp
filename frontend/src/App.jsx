@@ -17,6 +17,17 @@ async function api(path, options) {
   return data
 }
 
+async function loadAllUsers() {
+  try {
+    const users = await api('/api/users?role=all')
+    if (Array.isArray(users)) return users
+  } catch {
+    // Fall back to role-specific routes while an older backend deployment is updating.
+  }
+  const groups = await Promise.all(USER_ROLES.map(({ value }) => api(`/api/users?role=${encodeURIComponent(value)}`)))
+  return groups.flatMap((group) => Array.isArray(group) ? group : [])
+}
+
 function initials(title = 'Event') {
   return title.split(/\s+/).slice(0, 2).map((word) => word[0]).join('').toUpperCase()
 }
@@ -65,14 +76,11 @@ function App() {
     setUsersLoading(true)
     setRoleUsers([])
     setSelectedUserId('')
-    const usersRequest = role === 'all'
-      ? Promise.all(USER_ROLES.map(({ value }) => api(`/api/users?role=${encodeURIComponent(value)}`)))
-        .then((groups) => groups.flatMap((group) => Array.isArray(group) ? group : []))
-      : api(`/api/users?role=${encodeURIComponent(role)}`)
-    usersRequest
+    loadAllUsers()
       .then((data) => {
         if (!active) return
-        const users = Array.isArray(data) ? data : []
+        const allUsers = Array.isArray(data) ? data : []
+        const users = role === 'all' ? allUsers : allUsers.filter((user) => normalizeRole(user.role) === role)
         setRoleUsers(users)
         setSelectedUserId(users[0]?.id || '')
       })
@@ -87,9 +95,11 @@ function App() {
     if (role !== 'admin') return undefined
     let active = true
     setRoleStatsLoading(true)
-    Promise.all(USER_ROLES.map(async ({ value }) => [value, await api(`/api/users?role=${encodeURIComponent(value)}`)]))
-      .then((entries) => {
-        if (active) setUsersByRole(Object.fromEntries(entries.map(([key, value]) => [key, Array.isArray(value) ? value : []])))
+    loadAllUsers()
+      .then((users) => {
+        if (!active) return
+        const groupedUsers = Object.fromEntries(USER_ROLES.map(({ value }) => [value, users.filter((user) => normalizeRole(user.role) === value)]))
+        setUsersByRole(groupedUsers)
       })
       .catch((error) => {
         if (active) setNotice({ type: 'error', text: `Could not load role directory: ${error.message}` })

@@ -65,7 +65,11 @@ function App() {
     setUsersLoading(true)
     setRoleUsers([])
     setSelectedUserId('')
-    api(`/api/users?role=${encodeURIComponent(role)}`)
+    const usersRequest = role === 'all'
+      ? Promise.all(USER_ROLES.map(({ value }) => api(`/api/users?role=${encodeURIComponent(value)}`)))
+        .then((groups) => groups.flatMap((group) => Array.isArray(group) ? group : []))
+      : api(`/api/users?role=${encodeURIComponent(role)}`)
+    usersRequest
       .then((data) => {
         if (!active) return
         const users = Array.isArray(data) ? data : []

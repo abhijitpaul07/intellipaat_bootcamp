@@ -39,7 +39,7 @@ def index():
     return jsonify(message="Events API", endpoints=[
         "GET /api/events",
         "GET /api/events/<id>",
-        "GET /api/users?role=student|admin|organizer",
+        "GET /api/users?role=all|student|admin|organizer",
         "POST /api/registrations",
         "GET /api/me/registrations?user_id=<uuid>",
         "GET /api/events/<id>/registrations",
@@ -54,24 +54,30 @@ def list_events():
 
 @app.get("/api/users")
 def list_users():
-    """List public user IDs for a selected role; this route has no auth checks."""
-    role = (request.args.get("role") or "").strip().lower()
+    """List public user IDs, optionally filtered by role; no auth checks."""
+    role = (request.args.get("role") or "all").strip().lower()
     role_values = {
         "student": ["student", "students"],
-        "admin": ["admin", "administrator"],
-        "organizer": ["organizer", "organiser"],
+        "admin": ["admin", "admins", "administrator", "administrators"],
+        "organizer": ["organizer", "organizers", "organiser", "organisers"],
     }
-    if role not in role_values:
-        return jsonify(error="role must be student, admin, or organizer"), 400
+    if role != "all" and role not in role_values:
+        return jsonify(error="role must be all, student, admin, or organizer"), 400
 
-    response = (
-        supabase.table("users")
-        .select("id,email,role")
-        .in_("role", role_values[role])
-        .order("email")
-        .execute()
-    )
-    return jsonify(response.data)
+    users = []
+    page_size = 1000
+    offset = 0
+    while True:
+        query = supabase.table("users").select("id,email,role")
+        if role != "all":
+            query = query.in_("role", role_values[role])
+        response = query.order("email").range(offset, offset + page_size - 1).execute()
+        page = response.data or []
+        users.extend(page)
+        if len(page) < page_size:
+            break
+        offset += page_size
+    return jsonify(users)
 
 
 @app.get("/api/events/<event_id>")

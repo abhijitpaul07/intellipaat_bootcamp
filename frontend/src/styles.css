@@ -10,3 +10,5 @@
 @media(max-width:700px){.profile-selector{grid-template-columns:1fr;gap:14px;margin:-8px 0 30px;padding:17px}}
 @media(max-width:700px){.role-dashboard{padding:17px}.role-dashboard-heading h2{font-size:23px}.role-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.role-stats>div:nth-child(3){border-left:0;padding-left:0}.role-stats>div:nth-child(n+3){border-top:1px solid #d8dbce}.directory-row{grid-template-columns:75px 1fr}}
 .directory-id{display:flex;flex-direction:column;gap:3px}.directory-id strong{font-family:'DM Sans',sans-serif;font-size:8px;font-weight:500}.directory-id small{font-family:'DM Mono',monospace;font-size:7px;color:#92968e}
+.directory-total{margin:18px 0 9px}.directory-all-users{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.directory-all-users .directory-id{min-width:0;overflow-wrap:anywhere}.user-role-tag{text-transform:uppercase;letter-spacing:.5px;color:#718941!important}
+@media(max-width:700px){.directory-all-users{grid-template-columns:repeat(2,minmax(0,1fr))}}

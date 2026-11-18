@@ -232,8 +232,6 @@ function App() {
         {role === 'all' && <section className="role-dashboard directory-dashboard" id="role-dashboard">
           <div className="role-dashboard-heading"><div><div className="eyebrow">PUBLIC USER DIRECTORY</div><h2>All database <em>IDs.</em></h2><p>Every user ID is loaded from your database. Choose a role to narrow the dropdown, or keep All roles selected.</p></div><span className="role-pill">{roleUsers.length} IDS</span></div>
           <div className="role-stats">{directoryCounts.map((item) => <div key={item.value}><span>{item.label.toUpperCase()}</span><strong>{item.count}</strong></div>)}</div>
-          <div className="directory-title directory-total">ALL DATABASE USERS <span>{usersLoading ? 'Loading…' : `${roleUsers.length} IDs`}</span></div>
-          <div className="directory-all-users">{roleUsers.map((user) => <div className="directory-id" key={user.id}><strong>{user.email || user.role || 'User'}</strong><small>{user.id}</small><small className="user-role-tag">{user.role || 'No role'}</small></div>)}</div>
         </section>}
 
         {role === 'organizer' && <section className="role-dashboard organizer-dashboard" id="role-dashboard">
@@ -244,9 +242,6 @@ function App() {
         {role === 'admin' && <section className="role-dashboard admin-dashboard" id="role-dashboard">
           <div className="role-dashboard-heading"><div><div className="eyebrow">ADMIN OVERVIEW</div><h2>Everything in <em>one place.</em></h2><p>Public overview of events and role IDs. Select an event below to inspect its attendee list.</p></div><span className="role-pill admin-pill">ADMIN</span></div>
           <div className="role-stats"><div><span>EVENTS</span><strong>{events.length}</strong></div>{USER_ROLES.map((item) => <div key={item.value}><span>{item.label.toUpperCase()}</span><strong>{roleStatsLoading ? '…' : usersByRole[item.value].length}</strong></div>)}</div>
-          <div className="role-directory"><div className="directory-title">USER DIRECTORY <span>{roleStatsLoading ? 'Loading IDs…' : `${Object.values(usersByRole).reduce((sum, users) => sum + users.length, 0)} IDs`}</span></div>
-            {USER_ROLES.map((item) => <div className="directory-row" key={item.value}><strong>{item.label}</strong><div>{usersByRole[item.value].length ? usersByRole[item.value].map((user) => <span className="directory-id" key={user.id} title={user.email || user.id}><strong>{user.email || item.label}</strong><small>{user.id}</small></span>) : <span className="directory-empty">{roleStatsLoading ? 'Loading…' : 'No users with this role yet'}</span>}</div></div>)}
-          </div>
         </section>}
 
         <section className="events-section" id="events">

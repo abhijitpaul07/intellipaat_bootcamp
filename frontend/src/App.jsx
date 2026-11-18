@@ -123,6 +123,9 @@ function App() {
     ...item,
     count: roleUsers.filter((user) => normalizeRole(user.role) === item.value).length,
   }))
+  const idOptionGroups = role === 'all'
+    ? USER_ROLES.map((item) => ({ ...item, users: roleUsers.filter((user) => normalizeRole(user.role) === item.value) })).filter((group) => group.users.length)
+    : [{ value: role, label: activeRoleLabel, users: roleUsers }]
 
   async function chooseEvent(event) {
     setSelected(event)
@@ -220,7 +223,7 @@ function App() {
           <div className="profile-selector-copy"><div className="eyebrow">PICK A PROFILE</div><h2>Who are you here as?</h2><p>Choose a role to load the matching user IDs.</p><span className="profile-count">{usersLoading ? 'Loading user IDs…' : `${roleUsers.length} ${roleUsers.length === 1 ? 'ID' : 'IDs'} found for ${activeRoleLabel}`}</span></div>
           <div className="profile-selectors">
             <label>ROLE<select value={role} onChange={(event) => setRole(event.target.value)}>{ROLES.map((item) => <option value={item.value} key={item.value}>{item.label}</option>)}</select></label>
-            <label>DATABASE ID<select value={selectedUserId} onChange={(event) => setSelectedUserId(event.target.value)} disabled={usersLoading || roleUsers.length === 0}><option value="">{usersLoading ? 'Loading all database IDs…' : roleUsers.length ? `${roleUsers.length} IDs available — choose one` : 'No IDs found'}</option>{roleUsers.map((user) => <option value={user.id} key={user.id}>{user.id}{user.email ? ` · ${user.email}` : ''}{role === 'all' && user.role ? ` · ${user.role}` : ''}</option>)}</select></label>
+            <label>DATABASE ID<select value={selectedUserId} onChange={(event) => setSelectedUserId(event.target.value)} disabled={usersLoading || roleUsers.length === 0}><option value="">{usersLoading ? 'Loading all database IDs…' : roleUsers.length ? `${roleUsers.length} IDs available — choose one` : 'No IDs found'}</option>{idOptionGroups.map((group) => <optgroup label={`${group.label} (${group.users.length})`} key={group.value}>{group.users.map((user) => <option value={user.id} key={user.id}>{user.id}{user.email ? ` · ${user.email}` : ''}</option>)}</optgroup>)}</select></label>
           </div>
         </section>
 

@@ -28,6 +28,8 @@ function App() {
   const [roleUsers, setRoleUsers] = useState([])
   const [selectedUserId, setSelectedUserId] = useState('')
   const [usersLoading, setUsersLoading] = useState(false)
+  const [usersByRole, setUsersByRole] = useState({ student: [], admin: [], organizer: [] })
+  const [roleStatsLoading, setRoleStatsLoading] = useState(false)
   const [query, setQuery] = useState('')
   const [notice, setNotice] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -67,11 +69,30 @@ function App() {
     return () => { active = false }
   }, [role])
 
+  useEffect(() => {
+    if (role !== 'admin') return undefined
+    let active = true
+    setRoleStatsLoading(true)
+    Promise.all(ROLES.map(async ({ value }) => [value, await api(`/api/users?role=${encodeURIComponent(value)}`)]))
+      .then((entries) => {
+        if (active) setUsersByRole(Object.fromEntries(entries.map(([key, value]) => [key, Array.isArray(value) ? value : []])))
+      })
+      .catch((error) => {
+        if (active) setNotice({ type: 'error', text: `Could not load role directory: ${error.message}` })
+      })
+      .finally(() => { if (active) setRoleStatsLoading(false) })
+    return () => { active = false }
+  }, [role])
+
   const filteredEvents = useMemo(() => {
     const normalized = query.trim().toLowerCase()
-    if (!normalized) return events
-    return events.filter((event) => `${event.title || ''} ${event.status || ''}`.toLowerCase().includes(normalized))
-  }, [events, query])
+    const roleEvents = role === 'organizer' ? events.filter((event) => event.organizer_id === selectedUserId) : events
+    if (!normalized) return roleEvents
+    return roleEvents.filter((event) => `${event.title || ''} ${event.status || ''}`.toLowerCase().includes(normalized))
+  }, [events, query, role, selectedUserId])
+
+  const organizerCapacity = filteredEvents.reduce((total, event) => total + (Number(event.capacity) || 0), 0)
+  const activeRoleLabel = ROLES.find((item) => item.value === role)?.label || role
 
   async function chooseEvent(event) {
     setSelected(event)
@@ -136,8 +157,8 @@ function App() {
       <header className="topbar">
         <a className="brand" href="#top" aria-label="Gather home"><span className="brand-mark">g</span><span>gather<span className="brand-period">.</span></span></a>
         <nav className="top-nav" aria-label="Main navigation">
-          <a className="nav-link active" href="#events">Explore</a>
-          <a className="nav-link" href="#my-registrations">My registrations</a>
+          <a className="nav-link active" href={role === 'student' ? '#events' : '#role-dashboard'}>{role === 'student' ? 'Explore' : role === 'organizer' ? 'Organizer dashboard' : 'Admin overview'}</a>
+          <a className="nav-link" href={role === 'student' ? '#my-registrations' : '#events'}>{role === 'student' ? 'My registrations' : role === 'organizer' ? 'My events' : 'Event directory'}</a>
         </nav>
         <a className="top-cta" href="#events">Find your next event <span aria-hidden="true">↗</span></a>
       </header>
@@ -166,7 +187,7 @@ function App() {
         </section>
 
         <section className="profile-selector" aria-label="Choose a user profile">
-          <div className="profile-selector-copy"><div className="eyebrow">PICK A PROFILE</div><h2>Who are you here as?</h2><p>Choose a role to load the matching user IDs.</p></div>
+          <div className="profile-selector-copy"><div className="eyebrow">PICK A PROFILE</div><h2>Who are you here as?</h2><p>Choose a role to load the matching user IDs.</p><span className="profile-count">{usersLoading ? 'Loading user IDs…' : `${roleUsers.length} ${roleUsers.length === 1 ? 'ID' : 'IDs'} found for ${activeRoleLabel}`}</span></div>
           <div className="profile-selectors">
             <label>ROLE<select value={role} onChange={(event) => setRole(event.target.value)}>{ROLES.map((item) => <option value={item.value} key={item.value}>{item.label}</option>)}</select></label>
             <label>USER ID<select value={selectedUserId} onChange={(event) => setSelectedUserId(event.target.value)} disabled={usersLoading || roleUsers.length === 0}><option value="">{usersLoading ? 'Loading IDs…' : roleUsers.length ? 'Select an ID' : 'No IDs for this role'}</option>{roleUsers.map((user) => <option value={user.id} key={user.id}>{user.id}{user.email ? ` · ${user.email}` : ''}</option>)}</select></label>
@@ -175,10 +196,23 @@ function App() {
 
         {notice && <div className={`notice ${notice.type}`} role="status"><span>{notice.type === 'error' ? '!' : '✓'}</span>{notice.text}<button onClick={() => setNotice(null)} aria-label="Dismiss message">×</button></div>}
 
+        {role === 'organizer' && <section className="role-dashboard organizer-dashboard" id="role-dashboard">
+          <div className="role-dashboard-heading"><div><div className="eyebrow">ORGANIZER WORKSPACE</div><h2>Your events, <em>your room.</em></h2><p>Events assigned to the selected organizer ID, with attendee lists and capacity at a glance.</p></div><span className="role-pill">ORGANIZER</span></div>
+          <div className="role-stats"><div><span>YOUR EVENTS</span><strong>{filteredEvents.length}</strong></div><div><span>TOTAL CAPACITY</span><strong>{organizerCapacity || '—'}</strong></div><div><span>SELECTED ID</span><strong className="uuid-stat">{selectedUserId || 'Choose an organizer ID'}</strong></div></div>
+        </section>}
+
+        {role === 'admin' && <section className="role-dashboard admin-dashboard" id="role-dashboard">
+          <div className="role-dashboard-heading"><div><div className="eyebrow">ADMIN OVERVIEW</div><h2>Everything in <em>one place.</em></h2><p>Public overview of events and role IDs. Select an event below to inspect its attendee list.</p></div><span className="role-pill admin-pill">ADMIN</span></div>
+          <div className="role-stats"><div><span>EVENTS</span><strong>{events.length}</strong></div>{ROLES.map((item) => <div key={item.value}><span>{item.label.toUpperCase()}</span><strong>{roleStatsLoading ? '…' : usersByRole[item.value].length}</strong></div>)}</div>
+          <div className="role-directory"><div className="directory-title">USER DIRECTORY <span>{roleStatsLoading ? 'Loading IDs…' : `${Object.values(usersByRole).reduce((sum, users) => sum + users.length, 0)} IDs`}</span></div>
+            {ROLES.map((item) => <div className="directory-row" key={item.value}><strong>{item.label}</strong><div>{usersByRole[item.value].length ? usersByRole[item.value].map((user) => <span className="directory-id" key={user.id} title={user.email || user.id}><strong>{user.email || item.label}</strong><small>{user.id}</small></span>) : <span className="directory-empty">{roleStatsLoading ? 'Loading…' : 'No users with this role yet'}</span>}</div></div>)}
+          </div>
+        </section>}
+
         <section className="events-section" id="events">
           <div className="section-heading">
-            <div><div className="eyebrow section-eyebrow">YOUR NEXT CHAPTER STARTS HERE</div><h2>Find your kind of <em>thing.</em></h2></div>
-            <div className="section-count">{events.length.toString().padStart(2, '0')} <span>events to explore</span></div>
+            <div><div className="eyebrow section-eyebrow">{role === 'organizer' ? 'YOUR ORGANIZER DASHBOARD' : role === 'admin' ? 'ADMIN EVENT DIRECTORY' : 'YOUR NEXT CHAPTER STARTS HERE'}</div><h2>{role === 'organizer' ? <>Hosted by <em>you.</em></> : role === 'admin' ? <>Platform <em>events.</em></> : <>Find your kind of <em>thing.</em></>}</h2></div>
+            <div className="section-count">{filteredEvents.length.toString().padStart(2, '0')} <span>{role === 'organizer' ? 'events you organize' : 'events to explore'}</span></div>
           </div>
           <div className="event-toolbar">
             <div className="search-box"><span aria-hidden="true">⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search events or status" aria-label="Search events" /><kbd>⌘ K</kbd></div>
@@ -186,7 +220,7 @@ function App() {
           </div>
 
           {loading ? <div className="loading-state"><span className="loader" />Finding the good stuff…</div> : filteredEvents.length === 0 ? (
-            <div className="empty-state"><span className="empty-icon">✳</span><h3>{events.length ? 'Nothing by that name yet.' : 'The room is getting ready.'}</h3><p>{events.length ? 'Try another search.' : 'Check back soon for events to explore.'}</p></div>
+            <div className="empty-state"><span className="empty-icon">✳</span><h3>{role === 'organizer' && selectedUserId ? 'No events assigned to this organizer yet.' : events.length ? 'Nothing by that name yet.' : 'The room is getting ready.'}</h3><p>{role === 'organizer' ? 'Choose another organizer ID or ask an admin to assign an event.' : events.length ? 'Try another search.' : 'Check back soon for events to explore.'}</p></div>
           ) : (
             <div className="event-layout">
               <div className="event-grid">
@@ -203,19 +237,19 @@ function App() {
                 <h3>{selected.title}</h3>
                 <p className="detail-status"><span className="status-dot" />{selected.status || 'Details'}</p>
                 <div className="detail-facts"><div><span>CAPACITY</span><strong>{selected.capacity ?? 'Open'}</strong></div><div><span>REGISTERED</span><strong>{attendees.length}</strong></div></div>
-                <form className="register-form" onSubmit={register}><p className="register-as">Registering as <strong>{ROLES.find((item) => item.value === role)?.label}</strong>{selectedUserId ? ` · ${selectedUserId}` : ''}</p><button className="submit-button" type="submit" disabled={busy || usersLoading || !selectedUserId}>{busy ? 'Working…' : 'Save my spot'} <span>↗</span></button></form>
+                {role === 'student' && <form className="register-form" onSubmit={register}><p className="register-as">Registering as <strong>{activeRoleLabel}</strong>{selectedUserId ? ` · ${selectedUserId}` : ''}</p><button className="submit-button" type="submit" disabled={busy || usersLoading || !selectedUserId}>{busy ? 'Working…' : 'Save my spot'} <span>↗</span></button></form>}
                 <div className="attendee-list"><div className="attendee-heading"><span>WHO’S COMING</span><span>{attendees.length}</span></div>{attendees.length ? attendees.slice(0, 4).map((item) => <div className="attendee" key={item.id}><span className="attendee-avatar">{(item.users?.email || 'G')[0].toUpperCase()}</span><span>{item.users?.email || 'Guest'}</span></div>) : <p className="no-attendees">Be the first to join.</p>}</div>
               </aside>}
             </div>
           )}
         </section>
 
-        <section className="my-section" id="my-registrations">
+        {role === 'student' && <section className="my-section" id="my-registrations">
           <div className="my-copy"><div className="eyebrow">KEEP YOUR PLANS CLOSE</div><h2>Already found<br />your <em>people?</em></h2><p>Look up the events you’ve saved with your user ID.</p></div>
           <div className="lookup-card"><div className="lookup-icon">↗</div><h3>Your plans, all in one place.</h3><p>Using the selected {ROLES.find((item) => item.value === role)?.label.toLowerCase()} profile.</p><form className="lookup-form" onSubmit={findRegistrations}><button disabled={busy || usersLoading || !selectedUserId}>{busy ? 'Loading…' : 'Find registrations'}</button></form>
             {registrations.length > 0 && <div className="lookup-results">{registrations.map((item) => <div className="lookup-result" key={item.id}><span>{item.events?.title || item.event_id}</span><span>↗</span></div>)}</div>}
           </div>
-        </section>
+        </section>}
       </main>
       <footer className="footer"><a className="brand footer-brand" href="#top"><span className="brand-mark">g</span><span>gather<span className="brand-period">.</span></span></a><span>Find your people. Make a little room.</span><a href="#top">BACK TO TOP ↑</a></footer>
     </div>

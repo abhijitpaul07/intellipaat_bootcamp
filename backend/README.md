@@ -15,6 +15,7 @@ The local `.env` file is ignored by Git. Use `.env.example` as a template for lo
 
 - `GET /api/events`
 - `GET /api/events/<id>`
+- `GET /api/users?role=student|admin|organizer`
 - `POST /api/registrations` with JSON `{"user_id":"...","event_id":"..."}`
 - `GET /api/me/registrations?user_id=<uuid>`
 - `GET /api/events/<id>/registrations`

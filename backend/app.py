@@ -39,6 +39,7 @@ def index():
     return jsonify(message="Events API", endpoints=[
         "GET /api/events",
         "GET /api/events/<id>",
+        "GET /api/users?role=student|admin|organizer",
         "POST /api/registrations",
         "GET /api/me/registrations?user_id=<uuid>",
         "GET /api/events/<id>/registrations",
@@ -48,6 +49,28 @@ def index():
 @app.get("/api/events")
 def list_events():
     response = supabase.table("events").select("id,organizer_id,title,capacity,status").execute()
+    return jsonify(response.data)
+
+
+@app.get("/api/users")
+def list_users():
+    """List public user IDs for a selected role; this route has no auth checks."""
+    role = (request.args.get("role") or "").strip().lower()
+    role_values = {
+        "student": ["student", "students"],
+        "admin": ["admin", "administrator"],
+        "organizer": ["organizer", "organiser"],
+    }
+    if role not in role_values:
+        return jsonify(error="role must be student, admin, or organizer"), 400
+
+    response = (
+        supabase.table("users")
+        .select("id,email,role")
+        .in_("role", role_values[role])
+        .order("email")
+        .execute()
+    )
     return jsonify(response.data)
 
 

@@ -12,3 +12,4 @@
 .directory-id{display:flex;flex-direction:column;gap:3px}.directory-id strong{font-family:'DM Sans',sans-serif;font-size:8px;font-weight:500}.directory-id small{font-family:'DM Mono',monospace;font-size:7px;color:#92968e}
 .directory-total{margin:18px 0 9px}.directory-all-users{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.directory-all-users .directory-id{min-width:0;overflow-wrap:anywhere}.user-role-tag{text-transform:uppercase;letter-spacing:.5px;color:#718941!important}
 @media(max-width:700px){.directory-all-users{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.course-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}

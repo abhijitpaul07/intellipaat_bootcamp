@@ -7,6 +7,38 @@ const ROLES = [
   { value: 'admin', label: 'Admin' },
   { value: 'organizer', label: 'Organizer' },
 ]
+const COURSE_ART = [
+  [/python backend/i, 'python-backend.jpg'],
+  [/api design/i, 'api-design.jpg'],
+  [/cloud computing/i, 'cloud-computing.jpg'],
+  [/database fundamentals/i, 'database-fundamentals.jpg'],
+  [/machine learning/i, 'machine-learning.jpg'],
+  [/react frontend/i, 'react-frontend.jpg'],
+  [/docker/i, 'docker.jpg'],
+  [/data analytics/i, 'data-analytics.jpg'],
+  [/cybersecurity/i, 'cybersecurity.jpg'],
+  [/rest apis? with flask/i, 'flask-rest.jpg'],
+  [/git and github/i, 'git-collaboration.jpg'],
+  [/sql query optimization/i, 'sql-optimization.jpg'],
+  [/generative ai/i, 'generative-ai.jpg'],
+  [/kubernetes/i, 'kubernetes.jpg'],
+  [/ui and ux design/i, 'ui-ux-design.jpg'],
+  [/javascript/i, 'javascript.jpg'],
+  [/aws cloud/i, 'aws-cloud.jpg'],
+  [/agile project management/i, 'agile-project.jpg'],
+  [/mobile app development/i, 'mobile-app.jpg'],
+  [/data engineering pipelines/i, 'data-engineering.jpg'],
+  [/testing python/i, 'python-testing.jpg'],
+  [/networking fundamentals/i, 'networking.jpg'],
+  [/devops automation/i, 'devops.jpg'],
+  [/product management/i, 'product-management.jpg'],
+  [/computer vision/i, 'computer-vision.jpg'],
+  [/serverless/i, 'serverless.jpg'],
+  [/system design/i, 'system-design.jpg'],
+  [/open source/i, 'open-source.jpg'],
+  [/business intelligence/i, 'business-intelligence.jpg'],
+  [/career growth/i, 'career-growth.jpg'],
+]
 const USER_ROLES = ROLES.filter(({ value }) => value !== 'all')
 
 async function api(path, options) {
@@ -30,6 +62,11 @@ async function loadAllUsers() {
 
 function initials(title = 'Event') {
   return title.split(/\s+/).slice(0, 2).map((word) => word[0]).join('').toUpperCase()
+}
+
+function courseImage(title = '') {
+  const file = COURSE_ART.find(([pattern]) => pattern.test(title))?.[1] || 'python-backend.jpg'
+  return `/course-images/${file}`
 }
 
 function normalizeRole(role = '') {
@@ -260,7 +297,7 @@ function App() {
             <div className="event-layout">
               <div className="event-grid">
                 {filteredEvents.map((event, index) => <button className={`event-card ${selected?.id === event.id ? 'selected' : ''}`} key={event.id} onClick={() => chooseEvent(event)}>
-                  <div className={`event-card-art art-${index % 4}`}><span className="event-monogram">{initials(event.title)}</span><span className="event-art-spark">✳</span><span className="card-index">NO. {(index + 1).toString().padStart(2, '0')}</span></div>
+                  <div className={`event-card-art art-${index % 4}`}><img className="course-image" src={courseImage(event.title)} alt={event.title} loading="lazy" decoding="async" /><span className="event-art-spark">✳</span><span className="card-index">NO. {(index + 1).toString().padStart(2, '0')}</span></div>
                   <div className="event-card-content"><div className="event-meta"><span className="status-dot" />{event.status || 'Event'}<span className="event-arrow">↗</span></div><h3>{event.title || 'Untitled event'}</h3><div className="event-card-footer"><span>Capacity</span><strong>{event.capacity ?? 'Open'}</strong></div></div>
                 </button>)}
               </div>
